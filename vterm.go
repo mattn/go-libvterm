@@ -138,6 +138,10 @@ func (vt *VTerm) ObtainScreen() *Screen {
 	}
 }
 
+func (vt *VTerm) UTF8() bool {
+	return C.vterm_get_utf8(vt.term) == C.int(0)
+}
+
 func (vt *VTerm) SetUTF8(b bool) {
 	var v C.int
 	if b {

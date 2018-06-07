@@ -13,12 +13,36 @@ inline static int _attr_strike(VTermScreenCell *cell) { return cell->attrs.strik
 inline static int _attr_font(VTermScreenCell *cell) { return cell->attrs.font; }
 inline static int _attr_dwl(VTermScreenCell *cell) { return cell->attrs.dwl; }
 inline static int _attr_dhl(VTermScreenCell *cell) { return cell->attrs.dhl; }
+
+int _go_handle_damage(VTermRect, void*);
+int _go_handle_bell(void*);
+int _go_handle_resize(int, int, void*);
+int _go_handle_moverect(VTermRect, VTermRect, void*);
+int _go_handle_movecursor(VTermPos, VTermPos, int, void*);
+
+static VTermScreenCallbacks _screen_callbacks = {
+  _go_handle_damage,
+  _go_handle_moverect,
+  _go_handle_movecursor,
+  NULL,
+  _go_handle_bell,
+  _go_handle_resize,
+  NULL,
+  NULL
+};
+
+static void
+_vterm_screen_set_callbacks(VTermScreen *screen, void *user) {
+  vterm_screen_set_callbacks(screen, &_screen_callbacks, user);
+}
 */
 import "C"
 import (
 	"errors"
 	"image/color"
 	"unsafe"
+
+	"github.com/mattn/go-pointer"
 )
 
 type Attr int
@@ -38,15 +62,74 @@ const (
 )
 
 type VTerm struct {
-	term *C.VTerm
+	term   *C.VTerm
+	screen *Screen
 }
 
 type Pos struct {
 	pos C.VTermPos
 }
 
+func NewPos(row, col int) *Pos {
+	var pos Pos
+	pos.pos.col = C.int(col)
+	pos.pos.row = C.int(row)
+	return &pos
+}
+
+func (pos *Pos) Col() int {
+	return int(pos.pos.col)
+}
+
+func (pos *Pos) Row() int {
+	return int(pos.pos.row)
+}
+
+type Rect struct {
+	rect C.VTermRect
+}
+
+func (rect *Rect) StartRow() int {
+	return int(rect.rect.start_row)
+
+}
+
+func (rect *Rect) EndRow() int {
+	return int(rect.rect.end_row)
+}
+
+func (rect *Rect) StartCol() int {
+	return int(rect.rect.start_col)
+}
+
+func (rect *Rect) EndCol() int {
+	return int(rect.rect.end_col)
+}
+
+func NewRect(start_row, end_row, start_col, end_col int) *Rect {
+	var rect Rect
+	rect.rect.start_row = C.int(start_row)
+	rect.rect.end_row = C.int(end_row)
+	rect.rect.start_col = C.int(start_col)
+	rect.rect.end_col = C.int(end_col)
+	return &rect
+}
+
 type ScreenCell struct {
 	cell C.VTermScreenCell
+}
+
+type ParserCallbacks struct {
+	Text func([]byte, interface{}) int
+	/*
+	  int (*control)(unsigned char control, void *user);
+	  int (*control)(unsigned char control, void *user);
+	  int (*escape)(const char *bytes, size_t len, void *user);
+	  int (*csi)(const char *leader, const long args[], int argcount, const char *intermed, char command, void *user);
+	  int (*osc)(const char *command, size_t cmdlen, void *user);
+	  int (*dcs)(const char *command, size_t cmdlen, void *user);
+	  int (*resize)(int rows, int cols, void *user);
+	*/
 }
 
 func (sc *ScreenCell) Chars() []rune {
@@ -106,9 +189,15 @@ func (sc *ScreenCell) Attrs() *Attrs {
 }
 
 func New(rows, cols int) *VTerm {
-	return &VTerm{
-		term: C.vterm_new(C.int(rows), C.int(cols)),
+	term := C.vterm_new(C.int(rows), C.int(cols))
+	vt := &VTerm{
+		term: term,
+		screen: &Screen{
+			screen: C.vterm_obtain_screen(term),
+		},
 	}
+	C._vterm_screen_set_callbacks(C.vterm_obtain_screen(term), pointer.Save(vt))
+	return vt
 }
 
 func (vt *VTerm) Close() error {
@@ -151,9 +240,7 @@ func (vt *VTerm) Write(b []byte) (int, error) {
 }
 
 func (vt *VTerm) ObtainScreen() *Screen {
-	return &Screen{
-		screen: C.vterm_obtain_screen(vt.term),
-	}
+	return vt.screen
 }
 
 func (vt *VTerm) UTF8() bool {
@@ -170,6 +257,18 @@ func (vt *VTerm) SetUTF8(b bool) {
 
 type Screen struct {
 	screen *C.VTermScreen
+
+	UserData     interface{}
+	OnDamage     func(*Rect) int
+	OnResize     func(int, int) int
+	OnMoveRect   func(*Rect, *Rect) int
+	OnMoveCursor func(*Pos, *Pos, bool) int
+	OnBell       func() int
+	/*
+	  int (*settermprop)(VTermProp prop, VTermValue *val, void *user);
+	  int (*sb_pushline)(int cols, const VTermScreenCell *cells, void *user);
+	  int (*sb_popline)(int cols, VTermScreenCell *cells, void *user);
+	*/
 }
 
 func (scr *Screen) Flush() error {
@@ -178,10 +277,7 @@ func (scr *Screen) Flush() error {
 }
 
 func (sc *Screen) GetCellAt(row, col int) (*ScreenCell, error) {
-	var pos Pos
-	pos.pos.col = C.int(col)
-	pos.pos.row = C.int(row)
-	return sc.GetCell(&pos)
+	return sc.GetCell(NewPos(row, col))
 }
 
 func (sc *Screen) GetCell(pos *Pos) (*ScreenCell, error) {
@@ -214,4 +310,53 @@ func (scr *Screen) IsEOL(pos *Pos) bool {
 
 type State struct {
 	state *C.VTermState
+}
+
+//export _go_handle_damage
+func _go_handle_damage(rect C.VTermRect, user unsafe.Pointer) C.int {
+	onDamage := pointer.Restore(user).(*VTerm).ObtainScreen().OnDamage
+	if onDamage != nil {
+		return C.int(onDamage(&Rect{rect: rect}))
+	}
+	return 0
+}
+
+//export _go_handle_bell
+func _go_handle_bell(user unsafe.Pointer) C.int {
+	onBell := pointer.Restore(user).(*VTerm).ObtainScreen().OnBell
+	if onBell != nil {
+		return C.int(onBell())
+	}
+	return 0
+}
+
+//export _go_handle_resize
+func _go_handle_resize(row, col C.int, user unsafe.Pointer) C.int {
+	onResize := pointer.Restore(user).(*VTerm).ObtainScreen().OnResize
+	if onResize != nil {
+		return C.int(onResize(int(row), int(col)))
+	}
+	return 0
+}
+
+//export _go_handle_moverect
+func _go_handle_moverect(dest, src C.VTermRect, user unsafe.Pointer) C.int {
+	onMoveRect := pointer.Restore(user).(*VTerm).ObtainScreen().OnMoveRect
+	if onMoveRect != nil {
+		return C.int(onMoveRect(&Rect{rect: dest}, &Rect{rect: src}))
+	}
+	return 0
+}
+
+//export _go_handle_movecursor
+func _go_handle_movecursor(pos, oldpos C.VTermPos, visible C.int, user unsafe.Pointer) C.int {
+	onMoveCursor := pointer.Restore(user).(*VTerm).ObtainScreen().OnMoveCursor
+	if onMoveCursor != nil {
+		var b bool
+		if visible != C.int(0) {
+			b = true
+		}
+		return C.int(onMoveCursor(&Pos{pos: pos}, &Pos{pos: oldpos}, b))
+	}
+	return 0
 }

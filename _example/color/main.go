@@ -16,7 +16,6 @@ import (
 
 func drawChar(img *image.RGBA, x, y int, c color.Color, text string) {
 	point := fixed.Point26_6{fixed.Int26_6(x * 64), fixed.Int26_6(y * 64)}
-
 	d := &font.Drawer{
 		Dst:  img,
 		Src:  image.NewUniform(c),

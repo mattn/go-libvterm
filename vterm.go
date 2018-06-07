@@ -288,6 +288,17 @@ func (sc *Screen) GetCell(pos *Pos) (*ScreenCell, error) {
 	return &cell, nil
 }
 
+func (scr *Screen) GetChars(r *[]rune, rect *Rect) int {
+	l := len(*r)
+	buf := make([]C.uint32_t, l)
+	ret := int(C.vterm_screen_get_chars(scr.screen, &buf[0], C.size_t(l), rect.rect))
+	*r = make([]rune, ret)
+	for i := 0; i < ret; i++ {
+		(*r)[i] = rune(buf[i])
+	}
+	return ret
+}
+
 func (scr *Screen) Reset(hard bool) {
 	var v C.int
 	if hard {

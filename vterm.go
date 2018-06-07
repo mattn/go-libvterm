@@ -3,6 +3,16 @@ package vterm
 /*
 #include <vterm.h>
 #cgo pkg-config: vterm
+
+inline static int _attr_bold(VTermScreenCell *cell) { return cell->attrs.bold; }
+inline static int _attr_underline(VTermScreenCell *cell) { return cell->attrs.underline; }
+inline static int _attr_italic(VTermScreenCell *cell) { return cell->attrs.italic; }
+inline static int _attr_blink(VTermScreenCell *cell) { return cell->attrs.blink; }
+inline static int _attr_reverse(VTermScreenCell *cell) { return cell->attrs.reverse; }
+inline static int _attr_strike(VTermScreenCell *cell) { return cell->attrs.strike; }
+inline static int _attr_font(VTermScreenCell *cell) { return cell->attrs.font; }
+inline static int _attr_dwl(VTermScreenCell *cell) { return cell->attrs.dwl; }
+inline static int _attr_dhl(VTermScreenCell *cell) { return cell->attrs.dhl; }
 */
 import "C"
 import (
@@ -11,24 +21,28 @@ import (
 	"unsafe"
 )
 
+type Attr int
+
+const (
+	AttrNone       Attr = 0
+	AttrBold            = Attr(C.VTERM_ATTR_BOLD)
+	AttrUnderline       = Attr(C.VTERM_ATTR_UNDERLINE)
+	AttrItalic          = Attr(C.VTERM_ATTR_ITALIC)
+	AttrBlink           = Attr(C.VTERM_ATTR_BLINK)
+	AttrReverse         = Attr(C.VTERM_ATTR_REVERSE)
+	AttrStrike          = Attr(C.VTERM_ATTR_STRIKE)
+	AttrFont            = Attr(C.VTERM_ATTR_FONT)
+	AttrForeground      = Attr(C.VTERM_ATTR_FOREGROUND)
+	AttrBackground      = Attr(C.VTERM_ATTR_BACKGROUND)
+	AttrNAttrrs
+)
+
 type VTerm struct {
 	term *C.VTerm
 }
 
 type Pos struct {
 	pos C.VTermPos
-}
-
-type ScreenCellAttrs struct {
-	Bold      int
-	Underline int
-	Italic    int
-	Blink     int
-	Reverse   int
-	Strike    int
-	Font      int
-	Dwl       int
-	Dhl       int
 }
 
 type ScreenCell struct {
@@ -65,10 +79,31 @@ func (sc *ScreenCell) Bg() color.Color {
 	}
 }
 
-/*
-TODO
-Attrs ScreenCellAttrs
-*/
+type Attrs struct {
+	Bold      int
+	Underline int
+	Italic    int
+	Blink     int
+	Reverse   int
+	Strike    int
+	Font      int
+	Dwl       int
+	Dhl       int
+}
+
+func (sc *ScreenCell) Attrs() *Attrs {
+	return &Attrs{
+		Bold:      int(C._attr_bold(&sc.cell)),
+		Underline: int(C._attr_underline(&sc.cell)),
+		Italic:    int(C._attr_italic(&sc.cell)),
+		Blink:     int(C._attr_blink(&sc.cell)),
+		Reverse:   int(C._attr_reverse(&sc.cell)),
+		Strike:    int(C._attr_strike(&sc.cell)),
+		Font:      int(C._attr_font(&sc.cell)),
+		Dwl:       int(C._attr_dwl(&sc.cell)),
+		Dhl:       int(C._attr_dhl(&sc.cell)),
+	}
+}
 
 func New(rows, cols int) *VTerm {
 	return &VTerm{

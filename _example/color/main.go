@@ -41,7 +41,7 @@ func main() {
 	}
 	screen.Flush()
 
-	rows, cols := vt.GetSize()
+	rows, cols := vt.Size()
 	img := image.NewRGBA(image.Rect(0, 0, cols*7, rows*13))
 	draw.Draw(img, img.Bounds(), &image.Uniform{color.Black}, image.ZP, draw.Src)
 

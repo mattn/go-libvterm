@@ -116,10 +116,28 @@ func (vt *VTerm) Close() error {
 	return nil
 }
 
-func (vt *VTerm) GetSize() (int, int) {
+func (vt *VTerm) Size() (int, int) {
 	var rows, cols C.int
 	C.vterm_get_size(vt.term, &rows, &cols)
 	return int(rows), int(cols)
+}
+
+func (vt *VTerm) SetSize(rows, cols int) {
+	C.vterm_set_size(vt.term, C.int(rows), C.int(cols))
+}
+
+func (vt *VTerm) KeyboardStartPaste() {
+	C.vterm_keyboard_start_paste(vt.term)
+}
+
+func (vt *VTerm) KeyboardStopPaste() {
+	C.vterm_keyboard_end_paste(vt.term)
+}
+
+func (vt *VTerm) ObtainState() *State {
+	return &State{
+		state: C.vterm_obtain_state(vt.term),
+	}
 }
 
 func (vt *VTerm) Read(b []byte) (int, error) {
@@ -139,7 +157,7 @@ func (vt *VTerm) ObtainScreen() *Screen {
 }
 
 func (vt *VTerm) UTF8() bool {
-	return C.vterm_get_utf8(vt.term) == C.int(0)
+	return C.vterm_get_utf8(vt.term) != C.int(0)
 }
 
 func (vt *VTerm) SetUTF8(b bool) {
@@ -180,4 +198,20 @@ func (scr *Screen) Reset(hard bool) {
 		v = 1
 	}
 	C.vterm_screen_reset(scr.screen, v)
+}
+
+func (scr *Screen) EnableAltScreen(e bool) {
+	var v C.int
+	if e {
+		v = 1
+	}
+	C.vterm_screen_enable_altscreen(scr.screen, v)
+}
+
+func (scr *Screen) IsEOL(pos *Pos) bool {
+	return C.vterm_screen_is_eol(scr.screen, pos.pos) != C.int(0)
+}
+
+type State struct {
+	state *C.VTermState
 }

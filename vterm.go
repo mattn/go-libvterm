@@ -235,8 +235,10 @@ func (vt *VTerm) Read(b []byte) (int, error) {
 }
 
 func (vt *VTerm) Write(b []byte) (int, error) {
-	curlen := C.vterm_input_write(vt.term, (*C.char)(unsafe.Pointer(&b[0])), C.size_t(len(b)))
-	return int(curlen), nil
+	if len(b) == 0 {
+		return 0, nil
+	}
+	return int(C.vterm_input_write(vt.term, (*C.char)(unsafe.Pointer(&b[0])), C.size_t(len(b)))), nil
 }
 
 func (vt *VTerm) ObtainScreen() *Screen {

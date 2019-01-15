@@ -229,6 +229,14 @@ func (vt *VTerm) ObtainState() *State {
 	}
 }
 
+func (s *State) SetDefaultColors(fg, bg color.RGBA) {
+	C.vterm_state_set_default_colors(s.state, toCVtermColor(fg), toCVtermColor(bg))
+}
+
+func toCVtermColor(col color.RGBA) *C.VTermColor {
+	return &C.VTermColor{C.uint8_t(col.R), C.uint8_t(col.G), C.uint8_t(col.B)}
+}
+
 func (vt *VTerm) Read(b []byte) (int, error) {
 	curlen := C.vterm_output_read(vt.term, (*C.char)(unsafe.Pointer(&b[0])), C.size_t(len(b)))
 	return int(curlen), nil

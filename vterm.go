@@ -132,6 +132,14 @@ type ParserCallbacks struct {
 	*/
 }
 
+func toCVtermColor(col color.RGBA) *C.VTermColor {
+	return &C.VTermColor{C.uint8_t(col.R), C.uint8_t(col.G), C.uint8_t(col.B)}
+}
+
+func colorFromVTermColor(vtcol *C.VTermColor) color.RGBA {
+	return color.RGBA{R: uint8(vtcol.red), G: uint8(vtcol.green), B: uint8(vtcol.blue), A: 255}
+}
+
 func (sc *ScreenCell) Chars() []rune {
 	chars := make([]rune, int(sc.cell.width))
 	for i := 0; i < len(chars); i++ {
@@ -145,21 +153,11 @@ func (sc *ScreenCell) Width() int {
 }
 
 func (sc *ScreenCell) Fg() color.Color {
-	return color.RGBA{
-		R: uint8(sc.cell.fg.red),
-		G: uint8(sc.cell.fg.green),
-		B: uint8(sc.cell.fg.blue),
-		A: 255,
-	}
+	return colorFromVTermColor(&sc.cell.fg)
 }
 
 func (sc *ScreenCell) Bg() color.Color {
-	return color.RGBA{
-		R: uint8(sc.cell.bg.red),
-		G: uint8(sc.cell.bg.green),
-		B: uint8(sc.cell.bg.blue),
-		A: 255,
-	}
+	return colorFromVTermColor(&sc.cell.bg)
 }
 
 type Attrs struct {
@@ -233,8 +231,31 @@ func (s *State) SetDefaultColors(fg, bg color.RGBA) {
 	C.vterm_state_set_default_colors(s.state, toCVtermColor(fg), toCVtermColor(bg))
 }
 
-func toCVtermColor(col color.RGBA) *C.VTermColor {
-	return &C.VTermColor{C.uint8_t(col.R), C.uint8_t(col.G), C.uint8_t(col.B)}
+// index between 0 and 15, 0-7 are normal colors and 8-15 are bright colors.
+func (s *State) SetPaletteColor(index int, col color.RGBA) {
+	if index < 0 || index >= 16 {
+		panic("Index out of range")
+	}
+	C.vterm_state_set_palette_color(s.state, C.int(index), toCVtermColor(col))
+}
+
+func (s *State) GetDefaultColors() (fg, bg color.RGBA) {
+	vt_fg := &C.VTermColor{}
+	vt_bg := &C.VTermColor{}
+	C.vterm_state_get_default_colors(s.state, vt_fg, vt_bg)
+	fg = colorFromVTermColor(vt_fg)
+	bg = colorFromVTermColor(vt_bg)
+	return
+}
+
+// index between 0 and 15, 0-7 are normal colors and 8-15 are bright colors.
+func (s *State) GetPaletteColor(index int) color.RGBA {
+	if index < 0 || index >= 16 {
+		panic("Index out of range")
+	}
+	vt_c := &C.VTermColor{}
+	C.vterm_state_get_palette_color(s.state, C.int(index), vt_c)
+	return colorFromVTermColor(vt_c)
 }
 
 func (vt *VTerm) Read(b []byte) (int, error) {

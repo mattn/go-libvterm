@@ -33,6 +33,7 @@ func main() {
 
 	screen := vt.ObtainScreen()
 	screen.Reset(true)
+	state := vt.ObtainState()
 
 	_, err := vt.Write([]byte("\033[31mHello \033[32mGolang\033[0m"))
 	if err != nil {
@@ -52,7 +53,7 @@ func main() {
 			}
 			chars := cell.Chars()
 			if len(chars) > 0 && chars[0] != 0 {
-				drawChar(img, (col+1)*7, (row+1)*13, cell.Fg(), string(chars))
+				drawChar(img, (col+1)*7, (row+1)*13, state.ConvertVTermColorToRGB(cell.Fg()), string(chars))
 			}
 		}
 	}

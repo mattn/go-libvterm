@@ -1,8 +1,9 @@
 package vterm
 
 /*
+#cgo CFLAGS: -I./libvterm/include
+#cgo LDFLAGS: ./libvterm.a
 #include <vterm.h>
-#cgo pkg-config: vterm
 
 inline static int _attr_bold(VTermScreenCell *cell) { return cell->attrs.bold; }
 inline static int _attr_underline(VTermScreenCell *cell) { return cell->attrs.underline; }

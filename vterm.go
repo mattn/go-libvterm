@@ -1,8 +1,8 @@
 package vterm
 
 /*
-#cgo CFLAGS: -I./libvterm/include
-#cgo LDFLAGS: ./libvterm.a
+#cgo CFLAGS: -I${SRCDIR}/libvterm/include
+#cgo LDFLAGS: ${SRCDIR}/libvterm.a
 #include <vterm.h>
 
 inline static int _attr_bold(VTermScreenCell *cell) { return cell->attrs.bold; }

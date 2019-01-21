@@ -8,4 +8,3 @@ libvterm:
 
 clean:
 	cd libvterm && make clean
-	rm -f libvterm.a

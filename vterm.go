@@ -2,7 +2,6 @@ package vterm
 
 /*
 #include <vterm.h>
-#cgo pkg-config: vterm
 
 inline static int _attr_bold(VTermScreenCell *cell) { return cell->attrs.bold; }
 inline static int _attr_underline(VTermScreenCell *cell) { return cell->attrs.underline; }
@@ -39,7 +38,6 @@ _vterm_screen_set_callbacks(VTermScreen *screen, void *user) {
 import "C"
 import (
 	"errors"
-	"image/color"
 	"unsafe"
 
 	"github.com/mattn/go-pointer"
@@ -144,24 +142,6 @@ func (sc *ScreenCell) Width() int {
 	return int(sc.cell.width)
 }
 
-func (sc *ScreenCell) Fg() color.Color {
-	return color.RGBA{
-		R: uint8(sc.cell.fg.red),
-		G: uint8(sc.cell.fg.green),
-		B: uint8(sc.cell.fg.blue),
-		A: 255,
-	}
-}
-
-func (sc *ScreenCell) Bg() color.Color {
-	return color.RGBA{
-		R: uint8(sc.cell.bg.red),
-		G: uint8(sc.cell.bg.green),
-		B: uint8(sc.cell.bg.blue),
-		A: 255,
-	}
-}
-
 type Attrs struct {
 	Bold      int
 	Underline int
@@ -227,14 +207,6 @@ func (vt *VTerm) ObtainState() *State {
 	return &State{
 		state: C.vterm_obtain_state(vt.term),
 	}
-}
-
-func (s *State) SetDefaultColors(fg, bg color.RGBA) {
-	C.vterm_state_set_default_colors(s.state, toCVtermColor(fg), toCVtermColor(bg))
-}
-
-func toCVtermColor(col color.RGBA) *C.VTermColor {
-	return &C.VTermColor{C.uint8_t(col.R), C.uint8_t(col.G), C.uint8_t(col.B)}
 }
 
 func (vt *VTerm) Read(b []byte) (int, error) {

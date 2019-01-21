@@ -1,0 +1,8 @@
+libvterm.a
+libvterm/src/*.o
+libvterm/src/*.lo
+libvterm/.libs/
+libvterm/libvterm.la
+libvterm/src/.libs/
+libvterm/src/encoding/DECdrawing.inc
+libvterm/src/encoding/uk.inc

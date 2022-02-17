@@ -1,3 +1,4 @@
+//go:build !libvterm
 // +build !libvterm
 
 package vterm
@@ -13,19 +14,19 @@ import (
 
 func (sc *ScreenCell) Fg() color.Color {
 	return color.RGBA{
-		R: uint8(sc.cell.fg.red),
-		G: uint8(sc.cell.fg.green),
-		B: uint8(sc.cell.fg.blue),
-		A: 255,
+		R: uint8(sc.cell.fg[0]),
+		G: uint8(sc.cell.fg[1]),
+		B: uint8(sc.cell.fg[2]),
+		A: uint8(sc.cell.fg[3]),
 	}
 }
 
 func (sc *ScreenCell) Bg() color.Color {
 	return color.RGBA{
-		R: uint8(sc.cell.bg.red),
-		G: uint8(sc.cell.bg.green),
-		B: uint8(sc.cell.bg.blue),
-		A: 255,
+		R: uint8(sc.cell.bg[0]),
+		G: uint8(sc.cell.bg[1]),
+		B: uint8(sc.cell.bg[2]),
+		A: uint8(sc.cell.bg[3]),
 	}
 }
 
@@ -34,5 +35,5 @@ func (s *State) SetDefaultColors(fg, bg color.RGBA) {
 }
 
 func toCVtermColor(col color.RGBA) *C.VTermColor {
-	return &C.VTermColor{C.uint8_t(col.R), C.uint8_t(col.G), C.uint8_t(col.B)}
+	return &C.VTermColor{byte(col.R), byte(col.G), byte(col.B)}
 }

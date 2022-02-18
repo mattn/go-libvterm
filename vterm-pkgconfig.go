@@ -14,19 +14,19 @@ import (
 
 func (sc *ScreenCell) Fg() color.Color {
 	return color.RGBA{
-		R: uint8(sc.cell.fg[0]),
-		G: uint8(sc.cell.fg[1]),
-		B: uint8(sc.cell.fg[2]),
-		A: uint8(sc.cell.fg[3]),
+		R: uint8(sc.cell.fg[1]),
+		G: uint8(sc.cell.fg[2]),
+		B: uint8(sc.cell.fg[3]),
+		A: uint8(255),
 	}
 }
 
 func (sc *ScreenCell) Bg() color.Color {
 	return color.RGBA{
-		R: uint8(sc.cell.bg[0]),
-		G: uint8(sc.cell.bg[1]),
-		B: uint8(sc.cell.bg[2]),
-		A: uint8(sc.cell.bg[3]),
+		R: uint8(sc.cell.bg[1]),
+		G: uint8(sc.cell.bg[2]),
+		B: uint8(sc.cell.bg[3]),
+		A: uint8(255),
 	}
 }
 
@@ -35,5 +35,5 @@ func (s *State) SetDefaultColors(fg, bg color.RGBA) {
 }
 
 func toCVtermColor(col color.RGBA) *C.VTermColor {
-	return &C.VTermColor{byte(col.R), byte(col.G), byte(col.B)}
+	return &C.VTermColor{C.VTERM_COLOR_RGB, byte(col.R), byte(col.G), byte(col.B)}
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
@@ -8,7 +9,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/mattn/go-libvterm"
+	vterm "github.com/mattn/go-libvterm"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/basicfont"
 	"golang.org/x/image/math/fixed"
@@ -34,9 +35,11 @@ func main() {
 	screen := vt.ObtainScreen()
 	screen.Reset(true)
 
-	_, err := vt.Write([]byte("\033[31mHello \033[32mGolang\033[0m"))
-	if err != nil {
-		log.Fatal(err)
+	for i := 0; i < 5; i++ {
+		_, err := fmt.Fprintf(vt, "\033[32mHello \033[%dmGolang\033[0m\r\n", 32+i)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	screen.Flush()
 
@@ -51,6 +54,7 @@ func main() {
 				log.Fatal(err)
 			}
 			chars := cell.Chars()
+			fmt.Println(cell.Fg())
 			if len(chars) > 0 && chars[0] != 0 {
 				drawChar(img, (col+1)*7, (row+1)*13, cell.Fg(), string(chars))
 			}

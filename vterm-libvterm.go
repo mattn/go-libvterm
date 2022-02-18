@@ -1,3 +1,4 @@
+//go:build libvterm
 // +build libvterm
 
 package vterm
@@ -61,12 +62,22 @@ func (c *VTermColor) GetIndex() (index uint8, ok bool) {
 		return 0, false
 	}
 }
-func (sc *ScreenCell) Fg() VTermColor {
-	return VTermColor{sc.cell.fg}
+func (sc *ScreenCell) Fg() color.Color {
+	return color.RGBA{
+		R: uint8(sc.cell.fg[1]),
+		G: uint8(sc.cell.fg[2]),
+		B: uint8(sc.cell.fg[3]),
+		A: uint8(255),
+	}
 }
 
-func (sc *ScreenCell) Bg() VTermColor {
-	return VTermColor{sc.cell.bg}
+func (sc *ScreenCell) Bg() color.Color {
+	return color.RGBA{
+		R: uint8(sc.cell.bg[1]),
+		G: uint8(sc.cell.bg[2]),
+		B: uint8(sc.cell.bg[3]),
+		A: uint8(255),
+	}
 }
 
 func (s *State) ConvertVTermColorToRGB(col VTermColor) color.RGBA {
